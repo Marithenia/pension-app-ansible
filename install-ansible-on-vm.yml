@@ -1,0 +1,11 @@
+---
+- name: Install Ansible on the VM so Jenkins can run playbooks
+  hosts: pension-vm
+  become: true
+
+  tasks:
+    - name: Install Ansible
+      apt:
+        name: ansible
+        state: present
+        update_cache: true
