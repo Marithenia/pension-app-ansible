@@ -4,4 +4,3 @@ all:
     pension-vm:
       ansible_host: 9.205.156.174
       ansible_user: azureuser
-      ansible_ssh_private_key_file: ~/.ssh/pension-app-vm-key.pem
