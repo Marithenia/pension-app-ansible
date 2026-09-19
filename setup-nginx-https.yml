@@ -1,0 +1,66 @@
+---
+- name: Configure nginx reverse proxy with HTTPS for pension-app
+  hosts: pension-vm
+  become: yes
+  become_user: root
+
+  vars:
+    citizen_domain: citizen.pension-app.cloud-ip.cc
+    admin_domain: admin.pension-app.cloud-ip.cc
+    jenkins_domain: jenkins.pension-app.cloud-ip.cc
+    mailhog_domain: mail.pension-app.cloud-ip.cc
+    letsencrypt_email: it21397@hua.gr
+
+  tasks:
+    - name: install nginx package
+      apt:
+        name: nginx
+        state: present
+        update_cache: yes
+
+    - name: install certbot and nginx plugin
+      apt:
+        name: [certbot, python3-certbot-nginx]
+        state: present
+
+    - name: copy nginx site configuration from template
+      template:
+        src: templates/pension-app.conf.j2
+        dest: /etc/nginx/sites-available/pension-app
+        mode: '0644'
+      notify: restart nginx service
+
+    - name: activate pension-app nginx config
+      file:
+        src: /etc/nginx/sites-available/pension-app
+        dest: /etc/nginx/sites-enabled/pension-app
+        state: link
+      notify: restart nginx service
+
+    - name: deactivate default nginx config
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+      notify: restart nginx service
+
+    - name: ensure nginx service is started and enabled
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: force handlers to run before requesting certificates
+      meta: flush_handlers
+
+    - name: obtain Let's Encrypt certificates for all domains
+      command: >
+        certbot --nginx --non-interactive --agree-tos --expand
+        --email {{ letsencrypt_email }} --redirect
+        -d {{ citizen_domain }} -d {{ admin_domain }} -d {{ jenkins_domain }} -d {{ mailhog_domain }}
+      notify: restart nginx service
+
+  handlers:
+    - name: restart nginx service
+      service:
+        name: nginx
+        state: restarted
