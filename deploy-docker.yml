@@ -69,6 +69,6 @@
         chdir: /home/azureuser/pension-app
 
     - name: Start the stack
-      command: docker compose up -d
+      command: docker compose up -d --force-recreate
       args:
         chdir: /home/azureuser/pension-app
